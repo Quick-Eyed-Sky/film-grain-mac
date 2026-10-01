@@ -62,7 +62,7 @@ either. What you can do instead of trusting me:
   notes give its SHA-256 fingerprint. After downloading, in Terminal:
 
   ```
-  shasum -a 256 ~/Downloads/Film-Grain-0.3-macos-arm64.zip
+  shasum -a 256 ~/Downloads/Film-Grain-*-macos-arm64.zip
   ```
 
   The two must match.

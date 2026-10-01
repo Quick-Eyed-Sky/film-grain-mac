@@ -42,6 +42,11 @@ actually does. Nothing leaves your Mac.
   about 0.7 s.
 - **Browse with the left and right arrow keys**, looping: after the last
   picture comes the first.
+- **Spot-check a big batch with the comma key.** Press `,` (it is listed in the
+  **Pictures** menu, as *Random Picture*) to jump to a picture picked at random
+  from your list. Each one comes up once before any comes back, so with 200
+  pictures you can see "here and there" whether the effect is right before you
+  save anything.
 - **Saves next to the original** as `name_grain.png` (or `.jpg`, quality 95).
   The original is never touched, and nothing is ever overwritten — a taken
   name becomes `name_grain_2.png`.

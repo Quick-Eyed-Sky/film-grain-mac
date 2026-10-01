@@ -70,7 +70,7 @@ pouvez :
   Terminal :
 
   ```
-  shasum -a 256 ~/Downloads/Film-Grain-0.3-macos-arm64.zip
+  shasum -a 256 ~/Downloads/Film-Grain-*-macos-arm64.zip
   ```
 
   Les deux valeurs doivent être identiques.

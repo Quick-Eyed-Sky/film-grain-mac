@@ -22,6 +22,18 @@ struct FilmGrainApp: App {
             CommandGroup(replacing: .newItem) {
                 Button("Open Pictures…") { model.chooseFiles() }.keyboardShortcut("o")
             }
+            // The keyboard shortcuts of the picture list live here, in the menu, and nowhere else in the window.
+            CommandMenu("Pictures") {
+                // The comma key: a picture picked at random, to spot-check a big batch "here and there".
+                Button("Random Picture") { model.showRandomPicture() }
+                    .keyboardShortcut(",", modifiers: [])
+                    .disabled(model.urls.count < 2)
+                Divider()
+                // The arrow keys are handled by the app itself (a menu shortcut would steal them from
+                // text fields), so these two items only list them.
+                Button("Previous Picture   ←") { model.step(-1) }.disabled(model.urls.count < 2)
+                Button("Next Picture   →") { model.step(1) }.disabled(model.urls.count < 2)
+            }
         }
     }
 }
@@ -151,11 +163,27 @@ final class GrainModel: ObservableObject {
                     return
                 }
                 self.urls = files
+                self.randomBag = []
                 self.index = 0
                 self.savedURLs = []
                 self.message = ""
                 self.loadCurrent()
             }
+        }
+    }
+
+    /// Pictures not yet shown by "Random Picture" in the current round.
+    private var randomBag: [Int] = []
+
+    /// A random picture of the list. Each one is shown once before any comes back, so that
+    /// pressing the key twenty times on 200 pictures looks at twenty different ones.
+    func showRandomPicture() {
+        guard urls.count > 1 else { return }
+        while true {
+            // A new round starts with every picture but the one on screen, which counts as seen.
+            if randomBag.isEmpty { randomBag = urls.indices.filter { $0 != index }.shuffled() }
+            let pick = randomBag.removeLast()
+            if pick != index { select(pick); return }     // never "jump" to the picture already on screen
         }
     }
 

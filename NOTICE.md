@@ -25,8 +25,8 @@ which is released under the GNU General Public License v3.0.
 - the grain pattern is computed once and reused while the other settings move;
 - the vignette range is limited to 0–1, the range in which it has an effect;
 - added: a window with live preview, before/after comparison, picture browsing,
-  batch saving, preservation of colour profile and metadata, and remembered
-  settings.
+  batch saving, a random-picture key to spot-check a large batch,
+  preservation of colour profile and metadata, and remembered settings.
 
 Anyone who redistributes this program must keep this notice and the licence,
 state their own changes, and make the corresponding source code available.

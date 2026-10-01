@@ -20,7 +20,7 @@ enum AppInfo {
     static let name = "Film Grain"
     // Single source of truth: the window header, the Info.plist and the
     // .txt files written next to each result all read this line.
-    static let version = "0.3"
+    static let version = "0.4"
 }
 
 /// Everything the user can change. The defaults are the ones of the ComfyUI node.

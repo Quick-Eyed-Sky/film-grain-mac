@@ -42,6 +42,11 @@ claire à côté qui dit ce qu'elle fait vraiment. Rien ne sort de votre Mac.
   ses métadonnées — environ 0,7 s.
 - **Naviguez avec les flèches gauche et droite du clavier**, en boucle : après
   la dernière image vient la première.
+- **Contrôlez un gros lot avec la touche virgule.** Appuyez sur `,` (elle est
+  indiquée dans le menu **Pictures**, sous le nom *Random Picture*) pour passer à
+  une image tirée au hasard dans votre liste. Chacune sort une fois avant qu'une
+  revienne : avec 200 images, vous voyez « un peu partout » si l'effet est bon
+  avant d'enregistrer quoi que ce soit.
 - **Enregistre à côté de l'original** sous `nom_grain.png` (ou `.jpg`, qualité
   95). L'original n'est jamais touché, et rien n'est jamais écrasé — un nom déjà
   pris devient `nom_grain_2.png`.
