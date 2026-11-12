@@ -20,7 +20,7 @@ enum AppInfo {
     static let name = "Film Grain"
     // Single source of truth: the window header, the Info.plist and the
     // .txt files written next to each result all read this line.
-    static let version = "0.4"
+    static let version = "0.5"
 }
 
 /// Everything the user can change. The defaults are the ones of the ComfyUI node.
@@ -30,6 +30,20 @@ struct GrainSettings: Equatable, Codable {
     var temperature: Double = 0      // -100 ... 100
     var vignette: Double = 0         // 0 ... 1
     var seed: Int = 1234
+    var saturation: Double = 1       // 0 ... 2; 1 leaves colours unchanged
+
+    init() {}
+
+    // Settings saved by version 0.4 have no saturation field.
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        intensity = try values.decodeIfPresent(Double.self, forKey: .intensity) ?? 0.2
+        scale = try values.decodeIfPresent(Double.self, forKey: .scale) ?? 10
+        temperature = try values.decodeIfPresent(Double.self, forKey: .temperature) ?? 0
+        vignette = try values.decodeIfPresent(Double.self, forKey: .vignette) ?? 0
+        seed = try values.decodeIfPresent(Int.self, forKey: .seed) ?? 1234
+        saturation = try values.decodeIfPresent(Double.self, forKey: .saturation) ?? 1
+    }
 }
 
 /// An 8-bit picture, 4 bytes per pixel in the order R, G, B, unused.
@@ -127,7 +141,7 @@ enum GrainEngine {
 
     // MARK: - Grain, warmth, vignette
 
-    /// Applies the four effects in the node's order: grain, warmth, vignette.
+    /// Applies grain, warmth, saturation and vignette in that order.
     static func render(_ source: Pixels, noise: [Float], settings s: GrainSettings) -> Pixels {
         let w = source.width, h = source.height
         precondition(noise.count == w * h, "noise size does not match the picture")
@@ -135,7 +149,8 @@ enum GrainEngine {
         let strength = Float(min(max(s.intensity, 0), 1))
         let t = Float(s.temperature / 100)
         let vignette = Float(min(max(s.vignette, 0), 1))
-        if strength == 0 && t == 0 && vignette == 0 { return source }
+        let saturation = Float(min(max(s.saturation, 0), 2))
+        if strength == 0 && t == 0 && vignette == 0 && saturation == 1 { return source }
 
         // Vignette: squared distance from the centre, per axis. As in the node the
         // axes run from -1 to +1 and the radius is divided by its largest value.
@@ -173,6 +188,13 @@ enum GrainEngine {
                                     g = clamp01(g * (1 + t * 0.4))
                                 } else if t < 0 {               // cooler: more blue
                                     b = clamp01(b * (1 - t))
+                                }
+
+                                if saturation != 1 {
+                                    let luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
+                                    r = clamp01(luminance + (r - luminance) * saturation)
+                                    g = clamp01(luminance + (g - luminance) * saturation)
+                                    b = clamp01(luminance + (b - luminance) * saturation)
                                 }
 
                                 if vignette > 0 {

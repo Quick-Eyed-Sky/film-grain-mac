@@ -399,6 +399,9 @@ struct ControlsPanel: View {
                 ParamRow(title: "Warmth", value: $model.settings.temperature, range: -100...100, step: 1,
                          defaultValue: 0, format: "%+.0f",
                          help: "Colour cast. Negative = cooler and bluer, positive = warmer and more orange.")
+                ParamRow(title: "Saturation", value: $model.settings.saturation, range: 0...2, step: 0.01,
+                         defaultValue: 1, format: "%.2f",
+                         help: "0 = black and white, 1 = unchanged, above 1 = more vivid colours.")
                 ParamRow(title: "Vignette", value: $model.settings.vignette, range: 0...1, step: 0.01,
                          defaultValue: 0, format: "%.2f",
                          help: "Darkens the corners. 0 = off, 1 = the corners go black.")

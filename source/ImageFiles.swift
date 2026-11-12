@@ -163,6 +163,7 @@ enum ImageFiles {
         Strength:      \(String(format: "%.2f", settings.intensity))
         Scale:         \(String(format: "%.0f", settings.scale))
         Warmth:        \(String(format: "%.0f", settings.temperature))
+        Saturation:    \(String(format: "%.2f", settings.saturation))
         Vignette:      \(String(format: "%.2f", settings.vignette))
         Seed:          \(settings.seed)
         """
