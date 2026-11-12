@@ -1,8 +1,8 @@
 # Film Grain — drop a picture, get film grain, on your Mac
 
-**A small native Mac app that adds film grain, a colour cast and a vignette to your pictures. Drop them on the window, adjust, save.**
+**A small native Mac app that adds film grain, saturation, a colour cast and a vignette to your pictures. Drop them on the window, adjust, save.**
 
-No browser, no Python, nothing to install. Strength, scale, warmth and
+No browser, no Python, nothing to install. Strength, scale, warmth, saturation and
 vignette are on one page, each with a plain sentence beside it saying what it
 actually does. Nothing leaves your Mac.
 
@@ -35,7 +35,7 @@ actually does. Nothing leaves your Mac.
   effect; let go and the effects come back. Your eyes can compare with and
   without, without touching a slider. (The *Result / Original* switch above
   the picture does the same, but stays where you put it.)
-- **Fast.** The grain pattern is computed once; moving *Strength*, *Warmth*
+- **Fast.** The grain pattern is computed once; moving *Strength*, *Warmth*, *Saturation*
   or *Vignette* does not recompute it, so the preview follows instantly. For a
   12-megapixel picture the grain takes about 20 ms (measured), and the whole
   round trip — read the file, add the grain, write it back with its metadata —
@@ -112,13 +112,14 @@ folder. Nothing else is installed or changed on your Mac.
 
 ## 🎛️ The controls
 
-The defaults are the ones of the original node.
+The grain, warmth and vignette defaults are those of the original node. Saturation starts at 1 (unchanged).
 
 | Control | What it does |
 |---|---|
 | **Strength** (0–1, default 0.20) | How visible the grain is. 0 = none. |
 | **Scale** (1–100, default 10) | How *even* the grain is across the picture — **not its size** (see above). |
 | **Warmth** (−100 to +100, default 0) | Colour cast. Negative = cooler and bluer, positive = warmer and more orange. |
+| **Saturation** (0–2, default 1) | 0 = black and white, 1 = unchanged; above 1 = more vivid colours. Applies to the preview and batch exports. |
 | **Vignette** (0–1, default 0) | Darkens the corners. 1 = the corners go black. |
 | **Seed** | Same seed + same settings = exactly the same grain. The dice button picks another. |
 
@@ -128,9 +129,10 @@ The defaults are the ones of the original node.
   get one back. Here the seed is part of the settings.
 - **Vignette stops at 1.** The node offers up to 10, but anything above 1 does
   nothing more, so the slider stops where the effect does.
+- **Saturation.** An additional colour adjustment, applied after grain and warmth, before vignette.
 - **Speed.** The grain pattern is cached, as described above.
 
-It is the same maths otherwise: the statistics of the node's grain (its own
+For the grain, the maths is otherwise the same: the statistics of the node's grain (its own
 Python code, run on a real picture) were compared with this app's, for three
 values of *Scale* — strength of the grain, and how much it varies across the
 picture — and they match.
@@ -158,7 +160,7 @@ re-implementation of the `FilmGrain` node of
 by **EllangoK**, which is itself GPL-3.0. **This is a modified adaptation, not
 the original:** rewritten in Swift as a standalone Mac app, with a seed, a
 cache of the grain pattern, a vignette range limited to what has an effect, and
-a window around it. If you redistribute it, GPL-3.0 applies to you too: keep
+a saturation control, and a window around it. If you redistribute it, GPL-3.0 applies to you too: keep
 the licence, keep this credit, say that you changed it, and make the source
 available.
 
@@ -173,6 +175,8 @@ Jean-Pascal — **[Quick-Eyed Sky](https://www.youtube.com/@QuickEyedSky)** on
 YouTube, [QES](https://huggingface.co/QES) on Hugging Face. Not a
 programmer: this exists because I wanted that node's grain as a small Mac app
 of its own.
+
+**ChatGPT (OpenAI)** contributed the code for the saturation control and its integration in version 0.5.
 
 If it saved you an afternoon, you can
 [buy me a coffee](https://buymeacoffee.com/oFJ5CiY7n). Entirely optional,

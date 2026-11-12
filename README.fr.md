@@ -1,9 +1,9 @@
 # Film Grain — déposez une image, obtenez du grain argentique, sur votre Mac
 
-**Une petite application Mac native qui ajoute du grain de pellicule, une dominante de couleur et une vignette à vos images. Déposez-les sur la fenêtre, réglez, enregistrez.**
+**Une petite application Mac native qui ajoute du grain de pellicule, une saturation, une dominante de couleur et une vignette à vos images. Déposez-les sur la fenêtre, réglez, enregistrez.**
 
 Pas de navigateur, pas de Python, rien à installer. La force, l'échelle, la
-chaleur et la vignette tiennent sur une seule page, chacune avec une phrase
+chaleur, la saturation et la vignette tiennent sur une seule page, chacune avec une phrase
 claire à côté qui dit ce qu'elle fait vraiment. Rien ne sort de votre Mac.
 
 ![La fenêtre](docs/screenshot.png)
@@ -36,7 +36,7 @@ claire à côté qui dit ce qu'elle fait vraiment. Rien ne sort de votre Mac.
   toucher à un curseur. (L'interrupteur *Result / Original* au-dessus de l'image
   fait la même chose, mais reste là où vous l'avez mis.)
 - **Rapide.** Le motif de grain est calculé une seule fois : bouger *Strength*,
-  *Warmth* ou *Vignette* ne le recalcule pas, l'aperçu suit donc instantanément.
+  *Warmth*, *Saturation* ou *Vignette* ne le recalcule pas, l'aperçu suit donc instantanément.
   Pour une image de 12 mégapixels, le grain prend environ 20 ms (mesuré), et
   l'aller-retour complet — lire le fichier, ajouter le grain, le réécrire avec
   ses métadonnées — environ 0,7 s.
@@ -116,13 +116,14 @@ Cela prend quelques secondes et met `Film Grain.app` dans le dossier
 
 ## 🎛️ Les réglages
 
-Les valeurs de départ sont celles du node d'origine.
+Les valeurs de départ du grain, de la chaleur et de la vignette sont celles du node d'origine. La saturation commence à 1 (inchangée).
 
 | Réglage | Ce qu'il fait |
 |---|---|
 | **Strength** (0–1, départ 0,20) | La visibilité du grain. 0 = aucun. |
 | **Scale** (1–100, départ 10) | L'*uniformité* du grain sur l'image — **pas sa taille** (voir plus haut). |
 | **Warmth** (−100 à +100, départ 0) | Dominante de couleur. Négatif = plus froid, plus bleu ; positif = plus chaud, plus orangé. |
+| **Saturation** (0–2, départ 1) | 0 = noir et blanc, 1 = inchangé ; au-dessus de 1 = couleurs plus vives. S’applique à l’aperçu et aux exports par lot. |
 | **Vignette** (0–1, départ 0) | Assombrit les coins. 1 = les coins deviennent noirs. |
 | **Seed** | Même graine + mêmes réglages = exactement le même grain. Le dé en tire une autre. |
 
@@ -132,9 +133,10 @@ Les valeurs de départ sont celles du node d'origine.
   d'en retrouver un. Ici, la graine fait partie des réglages.
 - **La vignette s'arrête à 1.** Le node propose jusqu'à 10, mais au-delà de 1 il
   ne se passe rien de plus : le curseur s'arrête là où l'effet s'arrête.
+- **Saturation.** Un réglage supplémentaire, appliqué après le grain et la chaleur, avant la vignette.
 - **Vitesse.** Le motif de grain est mis en cache, comme décrit plus haut.
 
-Pour le reste, c'est le même calcul : les statistiques du grain du node (son
+Pour le grain, le calcul reste le même : les statistiques du grain du node (son
 propre code Python, exécuté sur une vraie image) ont été comparées à celles de
 cette application, pour trois valeurs de *Scale* — force du grain et variation
 sur l'image — et elles concordent.
@@ -157,13 +159,13 @@ sur l'image — et elles concordent.
 **Cette application est sous GPL-3.0** — voir [LICENSE](LICENSE) et
 [NOTICE.md](NOTICE.md).
 
-C'est une **œuvre dérivée** : le grain, la chaleur et la vignette sont une
+C'est une **œuvre dérivée** : le grain, la chaleur, la saturation et la vignette sont une
 réécriture en Swift du node `FilmGrain` de
 [ComfyUI-post-processing-nodes](https://github.com/EllangoK/ComfyUI-post-processing-nodes)
 par **EllangoK**, lui-même sous GPL-3.0. **C'est une adaptation modifiée, pas
 l'original :** réécrite en Swift comme application Mac autonome, avec une graine,
 un cache du motif de grain, une vignette limitée à ce qui a un effet, et une
-fenêtre autour. Si vous la redistribuez, la GPL-3.0 s'applique aussi à vous :
+réglage de saturation et une fenêtre autour. Si vous la redistribuez, la GPL-3.0 s'applique aussi à vous :
 gardez la licence, gardez cette mention, dites que vous l'avez modifiée, et
 mettez le code source à disposition.
 
@@ -178,6 +180,8 @@ Jean-Pascal — **[Quick-Eyed Sky](https://www.youtube.com/@QuickEyedSky)** sur
 YouTube, [QES](https://huggingface.co/QES) sur Hugging Face. Pas
 programmeur : cela existe parce que je voulais le grain de ce node sous la forme
 d'une petite application Mac à part entière.
+
+**ChatGPT (OpenAI)** a contribué au code du réglage de saturation et à son intégration dans la version 0.5.
 
 Si cela vous a fait gagner un après-midi, vous pouvez
 [m'offrir un café](https://buymeacoffee.com/oFJ5CiY7n). C'est entièrement
