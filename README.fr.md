@@ -1,14 +1,13 @@
 # Film Grain — déposez une image, obtenez du grain argentique, sur votre Mac
 
-**Une petite application Mac native qui ajoute du grain de pellicule, une saturation, une dominante de couleur et une vignette à vos images. Déposez-les sur la fenêtre, réglez, enregistrez.**
+**Une petite application Mac native qui ajoute du grain de pellicule, des réglages de lumière et de couleur, une vignette et une halation à vos images. Déposez-les sur la fenêtre, réglez, enregistrez.**
 
-Pas de navigateur, pas de Python, rien à installer. La force, l'échelle, la
-chaleur, la saturation et la vignette tiennent sur une seule page, chacune avec une phrase
-claire à côté qui dit ce qu'elle fait vraiment. Rien ne sort de votre Mac.
+Pas de navigateur, pas de Python, rien à installer. Les réglages de grain, lumière, couleur et vignette sont regroupés dans un panneau, chacun accompagné d’une phrase
+claire qui explique son rôle. Rien ne sort de votre Mac.
 
 ![La fenêtre](docs/screenshot.png)
 
-*Aperçu en direct à taille réelle, pour juger le grain là où il est vraiment.*
+*Aperçu en mode Fit, réglages regroupés à gauche et enregistrement par lot en bas.*
 
 > Outil **non officiel**. L'effet est une réécriture en Swift du **node
 > FilmGrain** de
@@ -35,11 +34,10 @@ claire à côté qui dit ce qu'elle fait vraiment. Rien ne sort de votre Mac.
   relâchez, et les effets reviennent. L'œil peut comparer avec et sans, sans
   toucher à un curseur. (L'interrupteur *Result / Original* au-dessus de l'image
   fait la même chose, mais reste là où vous l'avez mis.)
+- **Comparez chaque effet.** Maintenez l’œil barré à côté d’un curseur pour masquer temporairement son effet sur l’aperçu, puis relâchez. Pour Scale et Grain size, c’est tout le grain qui est masqué ; pour Vignette feather, c’est la vignette. Les réglages enregistrés restent inchangés.
+- **Reset all effects** remet les effets au neutre, y compris Strength à 0. Le format d’enregistrement reste inchangé.
 - **Rapide.** Le motif de grain est calculé une seule fois : bouger *Strength*,
-  *Warmth*, *Saturation* ou *Vignette* ne le recalcule pas, l'aperçu suit donc instantanément.
-  Pour une image de 12 mégapixels, le grain prend environ 20 ms (mesuré), et
-  l'aller-retour complet — lire le fichier, ajouter le grain, le réécrire avec
-  ses métadonnées — environ 0,7 s.
+  *Warmth*, *Saturation* ou *Vignette* ne recalcule pas le motif. Les temps d'aperçu et d'export dépendent de la taille de l'image et des effets actifs, notamment l'halation.
 - **Naviguez avec les flèches gauche et droite du clavier**, en boucle : après
   la dernière image vient la première.
 - **Contrôlez un gros lot avec la touche virgule.** Appuyez sur `,` (elle est
@@ -60,12 +58,9 @@ claire à côté qui dit ce qu'elle fait vraiment. Rien ne sort de votre Mac.
 
 ## ⚠️ À savoir avant de commencer
 
-**« Scale » ne grossit pas le grain.** C'est surprenant, et cela a été vérifié
-sur le code du node d'origine : le grain fait toujours **un pixel**. Ce que
-règle *Scale*, c'est **l'uniformité** du grain sur l'image — des valeurs basses
-donnent des plages où il est plus fort ou plus faible, des valeurs hautes le
-même grain partout. Si vous voulez un grain gros (l'aspect d'une pellicule
-rapide), ce node ne le fait pas, et cette application non plus.
+**Scale et Grain size sont deux choses différentes.** *Scale* règle l’uniformité
+avec laquelle le grain est réparti. Le nouveau curseur *Grain size* permet de
+grossir le grain ; à 1, il conserve le grain fin d’un pixel d’origine.
 
 **Jugez le grain en *Actual size*.** *Fit* réduit l'image pour qu'elle tienne
 dans la fenêtre, et une image réduite gomme le grain. Un changement de
@@ -122,9 +117,14 @@ Les valeurs de départ du grain, de la chaleur et de la vignette sont celles du 
 |---|---|
 | **Strength** (0–1, départ 0,20) | La visibilité du grain. 0 = aucun. |
 | **Scale** (1–100, départ 10) | L'*uniformité* du grain sur l'image — **pas sa taille** (voir plus haut). |
+| **Grain size** (1–6, départ 1) | Grossit le grain ; 1 conserve le grain fin d’origine. |
+| **Brightness** / **Contrast** (−1 à +1, départ 0) | Éclaircit ou assombrit l’image, ou modifie son contraste global. |
+| **Shadows** / **Highlights** (−1 à +1, départ 0) | Éclaircit ou assombrit séparément les zones sombres et les zones claires. |
 | **Warmth** (−100 à +100, départ 0) | Dominante de couleur. Négatif = plus froid, plus bleu ; positif = plus chaud, plus orangé. |
 | **Saturation** (0–2, départ 1) | 0 = noir et blanc, 1 = inchangé ; au-dessus de 1 = couleurs plus vives. S’applique à l’aperçu et aux exports par lot. |
 | **Vignette** (0–1, départ 0) | Assombrit les coins. 1 = les coins deviennent noirs. |
+| **Vignette feather** (0–1, départ 0,5) | Règle l’étendue de la vignette vers le centre ; actif lorsque Vignette n’est pas à zéro. |
+| **Halation** (0–1, départ 0) | Ajoute un halo chaud autour des zones très lumineuses. |
 | **Seed** | Même graine + mêmes réglages = exactement le même grain. Le dé en tire une autre. |
 
 ## 🔬 En quoi cela diffère du node d'origine
@@ -134,6 +134,7 @@ Les valeurs de départ du grain, de la chaleur et de la vignette sont celles du 
 - **La vignette s'arrête à 1.** Le node propose jusqu'à 10, mais au-delà de 1 il
   ne se passe rien de plus : le curseur s'arrête là où l'effet s'arrête.
 - **Saturation.** Un réglage supplémentaire, appliqué après le grain et la chaleur, avant la vignette.
+- **Réglages supplémentaires.** Taille du grain, luminosité, contraste, ombres, hautes lumières, fondu de vignette et halation ont été ajoutés en 0.6 ; remise à zéro et comparaison par effet en 0.6.1.
 - **Vitesse.** Le motif de grain est mis en cache, comme décrit plus haut.
 
 Pour le grain, le calcul reste le même : les statistiques du grain du node (son
@@ -159,13 +160,12 @@ sur l'image — et elles concordent.
 **Cette application est sous GPL-3.0** — voir [LICENSE](LICENSE) et
 [NOTICE.md](NOTICE.md).
 
-C'est une **œuvre dérivée** : le grain, la chaleur, la saturation et la vignette sont une
+C'est une **œuvre dérivée** : le grain, la chaleur et la vignette sont une
 réécriture en Swift du node `FilmGrain` de
 [ComfyUI-post-processing-nodes](https://github.com/EllangoK/ComfyUI-post-processing-nodes)
 par **EllangoK**, lui-même sous GPL-3.0. **C'est une adaptation modifiée, pas
 l'original :** réécrite en Swift comme application Mac autonome, avec une graine,
-un cache du motif de grain, une vignette limitée à ce qui a un effet, et une
-réglage de saturation et une fenêtre autour. Si vous la redistribuez, la GPL-3.0 s'applique aussi à vous :
+un cache du motif de grain, une vignette limitée à ce qui a un effet, des réglages de saturation, de taille du grain, de lumière, de fondu et d’halation, et une fenêtre autour. Si vous la redistribuez, la GPL-3.0 s'applique aussi à vous :
 gardez la licence, gardez cette mention, dites que vous l'avez modifiée, et
 mettez le code source à disposition.
 
@@ -181,7 +181,7 @@ YouTube, [QES](https://huggingface.co/QES) sur Hugging Face. Pas
 programmeur : cela existe parce que je voulais le grain de ce node sous la forme
 d'une petite application Mac à part entière.
 
-**ChatGPT (OpenAI)** a contribué au code du réglage de saturation et à son intégration dans la version 0.5.
+**ChatGPT (OpenAI)** a contribué au code de la saturation en 0.5, puis aux nouveaux réglages et fonctions de comparaison en 0.6 et 0.6.1.
 
 Si cela vous a fait gagner un après-midi, vous pouvez
 [m'offrir un café](https://buymeacoffee.com/oFJ5CiY7n). C'est entièrement

@@ -24,6 +24,7 @@ which is released under the GNU General Public License v3.0.
   the same pixels (the original draws a new random grain on every run);
 - the grain pattern is computed once and reused while the other settings move;
 - a saturation adjustment was added in version 0.5, with code contributed by ChatGPT (OpenAI);
+- grain size, light adjustments, vignette feather and halation were added in 0.6; reset and per-effect preview comparison were added in 0.6.1, with code contributed by ChatGPT (OpenAI);
 - the vignette range is limited to 0–1, the range in which it has an effect;
 - added: a window with live preview, before/after comparison, picture browsing,
   batch saving, a random-picture key to spot-check a large batch,

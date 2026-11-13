@@ -1,14 +1,13 @@
 # Film Grain — drop a picture, get film grain, on your Mac
 
-**A small native Mac app that adds film grain, saturation, a colour cast and a vignette to your pictures. Drop them on the window, adjust, save.**
+**A small native Mac app that adds film grain, light and colour adjustments, a vignette and halation to your pictures. Drop them on the window, adjust, save.**
 
-No browser, no Python, nothing to install. Strength, scale, warmth, saturation and
-vignette are on one page, each with a plain sentence beside it saying what it
+No browser, no Python, nothing to install. Grain, light, colour and vignette controls are grouped in one panel, each with a plain sentence beside it saying what it
 actually does. Nothing leaves your Mac.
 
 ![The window](docs/screenshot.png)
 
-*Live preview at actual size, so you judge the grain where it really is.*
+*Live preview in Fit mode, with the controls grouped at left and batch saving below.*
 
 > This is an **unofficial** tool. The effect is a Swift re-implementation of
 > the **FilmGrain node** of
@@ -35,11 +34,10 @@ actually does. Nothing leaves your Mac.
   effect; let go and the effects come back. Your eyes can compare with and
   without, without touching a slider. (The *Result / Original* switch above
   the picture does the same, but stays where you put it.)
+- **Compare each effect.** Hold the crossed-eye button beside a slider to temporarily remove that effect from the preview; release to restore it. For Scale and Grain size, it hides the grain; for Vignette feather, it hides the vignette. Saved settings are not changed.
+- **Reset all effects** returns the image adjustments to neutral, including setting grain Strength to 0. The output format stays unchanged.
 - **Fast.** The grain pattern is computed once; moving *Strength*, *Warmth*, *Saturation*
-  or *Vignette* does not recompute it, so the preview follows instantly. For a
-  12-megapixel picture the grain takes about 20 ms (measured), and the whole
-  round trip — read the file, add the grain, write it back with its metadata —
-  about 0.7 s.
+  or *Vignette* does not recompute the grain pattern. Preview and export times depend on image size and enabled effects, especially halation.
 - **Browse with the left and right arrow keys**, looping: after the last
   picture comes the first.
 - **Spot-check a big batch with the comma key.** Press `,` (it is listed in the
@@ -60,12 +58,9 @@ actually does. Nothing leaves your Mac.
 
 ## ⚠️ Worth knowing before you start
 
-**"Scale" does not make the grain bigger.** That is surprising, and it was
-checked against the original node's code: the grain is always **one pixel**. What
-*Scale* controls is how **evenly** the grain is spread over the picture — low
-values give patches where it is stronger or weaker, high values give the same
-grain everywhere. If you want coarse grain (the look of a fast film), this
-node does not do that, and neither does this app.
+**Scale and grain size are different.** *Scale* adjusts how evenly the grain
+is distributed. The new *Grain size* slider makes the grain coarser; at 1 it
+preserves the original one-pixel grain.
 
 **Judge the grain at *Actual size*.** *Fit* shrinks the picture to fit the
 window, and a shrunken picture averages the grain away. A *Strength* change can
@@ -118,9 +113,14 @@ The grain, warmth and vignette defaults are those of the original node. Saturati
 |---|---|
 | **Strength** (0–1, default 0.20) | How visible the grain is. 0 = none. |
 | **Scale** (1–100, default 10) | How *even* the grain is across the picture — **not its size** (see above). |
+| **Grain size** (1–6, default 1) | Makes the grain coarser; 1 preserves the original fine grain. |
+| **Brightness** / **Contrast** (−1 to +1, default 0) | Lighten or darken the image, or adjust overall contrast. |
+| **Shadows** / **Highlights** (−1 to +1, default 0) | Lighten or darken darker and brighter areas separately. |
 | **Warmth** (−100 to +100, default 0) | Colour cast. Negative = cooler and bluer, positive = warmer and more orange. |
 | **Saturation** (0–2, default 1) | 0 = black and white, 1 = unchanged; above 1 = more vivid colours. Applies to the preview and batch exports. |
 | **Vignette** (0–1, default 0) | Darkens the corners. 1 = the corners go black. |
+| **Vignette feather** (0–1, default 0.5) | Controls how far the vignette extends toward the centre; enabled when Vignette is nonzero. |
+| **Halation** (0–1, default 0) | Adds a warm halo around very bright areas. |
 | **Seed** | Same seed + same settings = exactly the same grain. The dice button picks another. |
 
 ## 🔬 How it differs from the original node
@@ -130,6 +130,7 @@ The grain, warmth and vignette defaults are those of the original node. Saturati
 - **Vignette stops at 1.** The node offers up to 10, but anything above 1 does
   nothing more, so the slider stops where the effect does.
 - **Saturation.** An additional colour adjustment, applied after grain and warmth, before vignette.
+- **Additional controls.** Grain size, brightness, contrast, shadows, highlights, vignette feather and halation were added in version 0.6; reset and per-effect comparison followed in 0.6.1.
 - **Speed.** The grain pattern is cached, as described above.
 
 For the grain, the maths is otherwise the same: the statistics of the node's grain (its own
@@ -160,7 +161,7 @@ re-implementation of the `FilmGrain` node of
 by **EllangoK**, which is itself GPL-3.0. **This is a modified adaptation, not
 the original:** rewritten in Swift as a standalone Mac app, with a seed, a
 cache of the grain pattern, a vignette range limited to what has an effect, and
-a saturation control, and a window around it. If you redistribute it, GPL-3.0 applies to you too: keep
+saturation, grain-size and light adjustments, vignette feather, halation, and a window around it. If you redistribute it, GPL-3.0 applies to you too: keep
 the licence, keep this credit, say that you changed it, and make the source
 available.
 
@@ -176,7 +177,7 @@ YouTube, [QES](https://huggingface.co/QES) on Hugging Face. Not a
 programmer: this exists because I wanted that node's grain as a small Mac app
 of its own.
 
-**ChatGPT (OpenAI)** contributed the code for the saturation control and its integration in version 0.5.
+**ChatGPT (OpenAI)** contributed code for the saturation control in version 0.5 and the additional controls and comparison features in versions 0.6 and 0.6.1.
 
 If it saved you an afternoon, you can
 [buy me a coffee](https://buymeacoffee.com/oFJ5CiY7n). Entirely optional,
