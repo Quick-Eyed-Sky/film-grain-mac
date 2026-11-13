@@ -5,7 +5,7 @@
 Pas de navigateur, pas de Python, rien à installer. Les réglages de grain, lumière, couleur et vignette sont regroupés dans un panneau, chacun accompagné d’une phrase
 claire qui explique son rôle. Rien ne sort de votre Mac.
 
-![La fenêtre](docs/screenshot.png)
+![La fenêtre](docs/screenshot-0.6.1.png)
 
 *Aperçu en mode Fit, réglages regroupés à gauche et enregistrement par lot en bas.*
 

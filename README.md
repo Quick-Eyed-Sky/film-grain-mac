@@ -5,7 +5,7 @@
 No browser, no Python, nothing to install. Grain, light, colour and vignette controls are grouped in one panel, each with a plain sentence beside it saying what it
 actually does. Nothing leaves your Mac.
 
-![The window](docs/screenshot.png)
+![The window](docs/screenshot-0.6.1.png)
 
 *Live preview in Fit mode, with the controls grouped at left and batch saving below.*
 
