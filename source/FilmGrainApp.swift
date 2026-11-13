@@ -44,7 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 
     /// If the window loses the focus while the compare button is held, never stay stuck on the original.
-    func applicationDidResignActive(_ notification: Notification) { GrainModel.shared.holdOriginal = false }
+    func applicationDidResignActive(_ notification: Notification) { GrainModel.shared.holdOriginal = false; GrainModel.shared.mutedEffect = nil }
 
     /// Left / right arrow = previous / next picture, looping. The arrows are left alone while
     /// a text field is being edited (they move the cursor), on a focused slider, and in
@@ -77,6 +77,32 @@ final class GrainModel: ObservableObject {
     @Published var showOriginal = false          // the Result / Original switch above the picture
     @Published var holdOriginal = false          // true only while the compare button is held down
     @Published var dropTargeted = false
+    @Published var mutedEffect: String?
+
+    /// Temporary comparisons affect the preview only; saved settings stay untouched.
+    var previewSettings: GrainSettings {
+        var s = settings
+        switch mutedEffect {
+        case "Strength", "Scale", "Grain size": s.intensity = 0
+        case "Brightness": s.brightness = 0
+        case "Contrast": s.contrast = 0
+        case "Shadows": s.shadows = 0
+        case "Highlights": s.highlights = 0
+        case "Warmth": s.temperature = 0
+        case "Saturation": s.saturation = 1
+        case "Vignette", "Vignette feather": s.vignette = 0
+        case "Halation": s.halation = 0
+        default: break
+        }
+        return s
+    }
+
+    func resetEffects() {
+        var neutral = GrainSettings()
+        neutral.intensity = 0
+        mutedEffect = nil
+        settings = neutral
+    }
 
     // These three are remembered between launches (see remember()).
     @Published var settings = GrainSettings() { didSet { remember() } }
@@ -203,7 +229,7 @@ final class GrainModel: ObservableObject {
     /// never flashes the clean original for a moment.
     private func loadCurrent() {
         let url = urls[index]
-        let snapshot = settings
+        let snapshot = previewSettings
         lock.lock(); loadToken += 1; let mine = loadToken; lock.unlock()
         isRendering = true
         renderQueue.async { [weak self] in
@@ -226,7 +252,7 @@ final class GrainModel: ObservableObject {
                     self.current = image
                     self.originalImage = original
                     self.resultImage = result
-                    if self.settings != snapshot { self.scheduleRender() }   // a slider moved while loading
+                    if self.previewSettings != snapshot { self.scheduleRender() }   // a slider moved while loading
                 case .failure(let error):
                     self.current = nil
                     self.originalImage = nil
@@ -258,7 +284,7 @@ final class GrainModel: ObservableObject {
     /// only the latest one is drawn.
     func scheduleRender() {
         guard let image = current else { return }
-        let s = settings
+        let s = previewSettings
         lock.lock(); renderToken += 1; let mine = renderToken; lock.unlock()
         isRendering = true
         renderQueue.async { [weak self] in
@@ -349,6 +375,7 @@ struct ContentView: View {
             }
         }
         .onChange(of: model.settings) { _, _ in model.scheduleRender() }
+        .onChange(of: model.mutedEffect) { _, _ in model.scheduleRender() }
         // Without this the Seed field grabs the keyboard at launch and shows up highlighted.
         .onAppear { DispatchQueue.main.async { NSApp.keyWindow?.makeFirstResponder(nil) } }
     }
@@ -378,34 +405,32 @@ struct ControlsPanel: View {
     @EnvironmentObject var model: GrainModel
 
     var body: some View {
-        ScrollView {
+        VStack(spacing: 0) {
+            ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(AppInfo.name).font(.title2.bold())
                     Text("v\(AppInfo.version)").font(.callout).foregroundStyle(.secondary)
                 }
-                Text("Drop pictures on the window to give them film grain, a colour cast or a vignette.")
+                Text("Drop pictures here, adjust the look, then save one or the whole batch.")
                     .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 Divider()
 
                 CompareButton()
+                Button("Reset all effects") { model.resetEffects() }
+                    .frame(maxWidth: .infinity)
+                    .help("Set all effects to neutral, including grain strength. Output settings stay unchanged.")
 
+                Text("GRAIN").font(.caption.bold()).foregroundStyle(.secondary)
                 ParamRow(title: "Strength", value: $model.settings.intensity, range: 0...1, step: 0.01,
                          defaultValue: 0.2, format: "%.2f",
                          help: "How visible the grain is. 0 = none, 1 = extreme.")
                 ParamRow(title: "Scale", value: $model.settings.scale, range: 1...100, step: 1,
                          defaultValue: 10, format: "%.0f",
-                         help: "How even the grain is across the picture. Low: patches where it is stronger or weaker. High: the same everywhere. The grain itself always stays one pixel fine.")
-                ParamRow(title: "Warmth", value: $model.settings.temperature, range: -100...100, step: 1,
-                         defaultValue: 0, format: "%+.0f",
-                         help: "Colour cast. Negative = cooler and bluer, positive = warmer and more orange.")
-                ParamRow(title: "Saturation", value: $model.settings.saturation, range: 0...2, step: 0.01,
-                         defaultValue: 1, format: "%.2f",
-                         help: "0 = black and white, 1 = unchanged, above 1 = more vivid colours.")
-                ParamRow(title: "Vignette", value: $model.settings.vignette, range: 0...1, step: 0.01,
-                         defaultValue: 0, format: "%.2f",
-                         help: "Darkens the corners. 0 = off, 1 = the corners go black.")
-
+                         help: "How evenly the grain is spread. Low: patches; high: more even.")
+                ParamRow(title: "Grain size", value: $model.settings.grainSize, range: 1...6, step: 1,
+                         defaultValue: 1, format: "%.0f",
+                         help: "Size of the grain. 1 = the original fine grain; higher = coarser.")
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
                         Text("Seed").font(.headline)
@@ -426,9 +451,41 @@ struct ControlsPanel: View {
                 }
 
                 Divider()
-                SaveSection()
+                Text("LIGHT").font(.caption.bold()).foregroundStyle(.secondary)
+                ParamRow(title: "Brightness", value: $model.settings.brightness, range: -1...1, step: 0.01,
+                         defaultValue: 0, format: "%+.2f", help: "Lighten or darken the whole image.")
+                ParamRow(title: "Contrast", value: $model.settings.contrast, range: -1...1, step: 0.01,
+                         defaultValue: 0, format: "%+.2f", help: "Soften or strengthen the difference between light and dark.")
+                ParamRow(title: "Shadows", value: $model.settings.shadows, range: -1...1, step: 0.01,
+                         defaultValue: 0, format: "%+.2f", help: "Lighten or darken the darker areas.")
+                ParamRow(title: "Highlights", value: $model.settings.highlights, range: -1...1, step: 0.01,
+                         defaultValue: 0, format: "%+.2f", help: "Lighten or darken the brighter areas.")
+                Divider()
+                Text("COLOUR").font(.caption.bold()).foregroundStyle(.secondary)
+                ParamRow(title: "Warmth", value: $model.settings.temperature, range: -100...100, step: 1,
+                         defaultValue: 0, format: "%+.0f",
+                         help: "Colour cast. Negative = cooler and bluer, positive = warmer and more orange.")
+                ParamRow(title: "Saturation", value: $model.settings.saturation, range: 0...2, step: 0.01,
+                         defaultValue: 1, format: "%.2f",
+                         help: "0 = black and white, 1 = unchanged, above 1 = more vivid colours.")
+                Divider()
+                Text("VIGNETTE & HALATION").font(.caption.bold()).foregroundStyle(.secondary)
+                ParamRow(title: "Vignette", value: $model.settings.vignette, range: 0...1, step: 0.01,
+                         defaultValue: 0, format: "%.2f",
+                         help: "Darkens the corners. 0 = off, 1 = black corners.")
+                ParamRow(title: "Vignette feather", value: $model.settings.vignetteFeather, range: 0...1, step: 0.01,
+                         defaultValue: 0.5, format: "%.2f",
+                         help: "Lower: more confined to the edges. Higher: more gradual, reaching toward the centre.")
+                    .disabled(model.settings.vignette == 0)
+                ParamRow(title: "Halation", value: $model.settings.halation, range: 0...1, step: 0.01,
+                         defaultValue: 0, format: "%.2f",
+                         help: "Warm halo around very bright lights. Try a higher value to see it; 0 = off.")
+
             }
             .padding(16)
+            }
+            Divider()
+            SaveSection().padding(16)
         }
     }
 }
@@ -462,7 +519,19 @@ struct HoldStyle: ButtonStyle {
     }
 }
 
+/// A compact hold-to-compare control. The model changes only the preview.
+struct EffectHoldStyle: ButtonStyle {
+    let onChange: (Bool) -> Void
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(configuration.isPressed ? Color.accentColor : Color.secondary)
+            .contentShape(Rectangle())
+            .onChange(of: configuration.isPressed) { _, pressed in onChange(pressed) }
+    }
+}
+
 struct ParamRow: View {
+    @EnvironmentObject var model: GrainModel
     let title: String
     @Binding var value: Double
     let range: ClosedRange<Double>
@@ -482,6 +551,13 @@ struct ParamRow: View {
                 Text(title).font(.headline)
                 Spacer()
                 Text(String(format: format, value)).monospacedDigit().foregroundStyle(.secondary)
+                Button { } label: { Image(systemName: "eye.slash") }
+                    .buttonStyle(EffectHoldStyle { pressed in
+                        if pressed { model.mutedEffect = title }
+                        else if model.mutedEffect == title { model.mutedEffect = nil }
+                    })
+                    .disabled(model.current == nil)
+                    .help("Hold to see the picture without this effect; release to restore it.")
                 Button { value = defaultValue } label: { Image(systemName: "arrow.counterclockwise") }
                     .buttonStyle(.borderless)
                     .help("Back to \(String(format: format, defaultValue))")

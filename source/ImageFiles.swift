@@ -162,9 +162,16 @@ enum ImageFiles {
 
         Strength:      \(String(format: "%.2f", settings.intensity))
         Scale:         \(String(format: "%.0f", settings.scale))
+        Grain size:    \(String(format: "%.0f", settings.grainSize))
+        Brightness:    \(String(format: "%.2f", settings.brightness))
+        Contrast:      \(String(format: "%.2f", settings.contrast))
+        Shadows:       \(String(format: "%.2f", settings.shadows))
+        Highlights:    \(String(format: "%.2f", settings.highlights))
         Warmth:        \(String(format: "%.0f", settings.temperature))
         Saturation:    \(String(format: "%.2f", settings.saturation))
         Vignette:      \(String(format: "%.2f", settings.vignette))
+        Vignette feather: \(String(format: "%.2f", settings.vignetteFeather))
+        Halation:      \(String(format: "%.2f", settings.halation))
         Seed:          \(settings.seed)
         """
         if source.hadTransparency { text += "\n\nNote: the original had transparency; it was flattened onto white." }

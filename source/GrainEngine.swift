@@ -20,7 +20,7 @@ enum AppInfo {
     static let name = "Film Grain"
     // Single source of truth: the window header, the Info.plist and the
     // .txt files written next to each result all read this line.
-    static let version = "0.5"
+    static let version = "0.6.1"
 }
 
 /// Everything the user can change. The defaults are the ones of the ComfyUI node.
@@ -31,6 +31,14 @@ struct GrainSettings: Equatable, Codable {
     var vignette: Double = 0         // 0 ... 1
     var seed: Int = 1234
     var saturation: Double = 1       // 0 ... 2; 1 leaves colours unchanged
+
+    var grainSize: Double = 1       // 1 ... 6 pixels
+    var brightness: Double = 0       // -1 ... 1
+    var contrast: Double = 0         // -1 ... 1
+    var shadows: Double = 0          // -1 ... 1
+    var highlights: Double = 0        // -1 ... 1
+    var vignetteFeather: Double = 0.5 // 0 ... 1; 0.5 preserves the original vignette
+    var halation: Double = 0         // 0 ... 1
 
     init() {}
 
@@ -43,6 +51,13 @@ struct GrainSettings: Equatable, Codable {
         vignette = try values.decodeIfPresent(Double.self, forKey: .vignette) ?? 0
         seed = try values.decodeIfPresent(Int.self, forKey: .seed) ?? 1234
         saturation = try values.decodeIfPresent(Double.self, forKey: .saturation) ?? 1
+        grainSize = try values.decodeIfPresent(Double.self, forKey: .grainSize) ?? 1
+        brightness = try values.decodeIfPresent(Double.self, forKey: .brightness) ?? 0
+        contrast = try values.decodeIfPresent(Double.self, forKey: .contrast) ?? 0
+        shadows = try values.decodeIfPresent(Double.self, forKey: .shadows) ?? 0
+        highlights = try values.decodeIfPresent(Double.self, forKey: .highlights) ?? 0
+        vignetteFeather = try values.decodeIfPresent(Double.self, forKey: .vignetteFeather) ?? 0.5
+        halation = try values.decodeIfPresent(Double.self, forKey: .halation) ?? 0
     }
 }
 
@@ -150,7 +165,15 @@ enum GrainEngine {
         let t = Float(s.temperature / 100)
         let vignette = Float(min(max(s.vignette, 0), 1))
         let saturation = Float(min(max(s.saturation, 0), 2))
-        if strength == 0 && t == 0 && vignette == 0 && saturation == 1 { return source }
+        let brightness = Float(min(max(s.brightness, -1), 1))
+        let contrast = Float(min(max(s.contrast, -1), 1))
+        let shadows = Float(min(max(s.shadows, -1), 1))
+        let highlights = Float(min(max(s.highlights, -1), 1))
+        let feather = Float(min(max(s.vignetteFeather, 0), 1))
+        let halation = Float(min(max(s.halation, 0), 1))
+        let grainSize = max(1, min(6, Int(s.grainSize.rounded())))
+        if strength == 0 && t == 0 && vignette == 0 && saturation == 1 && brightness == 0 && contrast == 0 && shadows == 0 && highlights == 0 && halation == 0 { return source }
+        let glow = halation > 0 ? highlightGlow(source) : nil
 
         // Vignette: squared distance from the centre, per axis. As in the node the
         // axes run from -1 to +1 and the radius is divided by its largest value.
@@ -177,11 +200,38 @@ enum GrainEngine {
                             for x in 0..<w {
                                 let i = y * w + x
                                 let p = i * 4
-                                let n = nz[i] * strength
+                                // Bilinear sampling of a coarser deterministic noise grid creates larger grains.
+                                let n: Float
+                                if grainSize == 1 { n = nz[i] * strength }
+                                else {
+                                    let x0 = (x / grainSize) * grainSize, y0 = (y / grainSize) * grainSize
+                                    let x1 = min(x0 + grainSize, w - 1), y1 = min(y0 + grainSize, h - 1)
+                                    let fx = Float(x - x0) / Float(grainSize), fy = Float(y - y0) / Float(grainSize)
+                                    let top = nz[y0 * w + x0] * (1 - fx) + nz[y0 * w + x1] * fx
+                                    let bottom = nz[y1 * w + x0] * (1 - fx) + nz[y1 * w + x1] * fx
+                                    n = (top * (1 - fy) + bottom * fy) * strength
+                                }
                                 var r = Float(src[p]) * (1 / 255) + n
                                 var g = Float(src[p + 1]) * (1 / 255) + n
                                 var b = Float(src[p + 2]) * (1 / 255) + n
                                 r = clamp01(r); g = clamp01(g); b = clamp01(b)
+
+                                if brightness != 0 || contrast != 0 || shadows != 0 || highlights != 0 {
+                                    let lum = clamp01(0.2126 * r + 0.7152 * g + 0.0722 * b)
+                                    let shadowWeight = (1 - lum) * (1 - lum)
+                                    let highlightWeight = lum * lum
+                                    let shift = brightness * 0.35 + shadows * 0.35 * shadowWeight + highlights * 0.35 * highlightWeight
+                                    let gain: Float = contrast >= 0 ? 1 + contrast * 1.5 : 1 + contrast * 0.8
+                                    r = clamp01((r - 0.5) * gain + 0.5 + shift)
+                                    g = clamp01((g - 0.5) * gain + 0.5 + shift)
+                                    b = clamp01((b - 0.5) * gain + 0.5 + shift)
+                                }
+                                if let glow {
+                                    let amount = glow.value(x: x, y: y, width: w, height: h) * halation * 0.60
+                                    r = clamp01(r + amount)
+                                    g = clamp01(g + amount * 0.30)
+                                    b = clamp01(b + amount * 0.12)
+                                }
 
                                 if t > 0 {                      // warmer: more red, a little more green
                                     r = clamp01(r * (1 + t))
@@ -199,7 +249,17 @@ enum GrainEngine {
 
                                 if vignette > 0 {
                                     let radius = (x2[x] + rowY2).squareRoot() * invLongest
-                                    let k = 1 - radius * vignette
+                                    // The midpoint reproduces the 0.5 vignette exactly.
+                                    let profile: Float
+                                    if feather < 0.5 {
+                                        let u = clamp01((radius - 0.65) / 0.35)
+                                        let hard = u * u * (3 - 2 * u)
+                                        profile = hard * (1 - 2 * feather) + radius * (2 * feather)
+                                    } else {
+                                        let soft = radius.squareRoot()
+                                        profile = radius * (2 - 2 * feather) + soft * (2 * feather - 1)
+                                    }
+                                    let k = 1 - profile * vignette
                                     r = clamp01(r * k); g = clamp01(g * k); b = clamp01(b * k)
                                 }
 
@@ -214,6 +274,55 @@ enum GrainEngine {
             }
         }
         return result
+    }
+
+    private struct GlowMap {
+        let width: Int, height: Int
+        let values: [Float]
+        func value(x: Int, y: Int, width w: Int, height h: Int) -> Float {
+            let gx = (Float(x) + 0.5) * Float(width) / Float(w) - 0.5
+            let gy = (Float(y) + 0.5) * Float(height) / Float(h) - 0.5
+            let x0 = max(0, min(width - 1, Int(floor(gx))))
+            let y0 = max(0, min(height - 1, Int(floor(gy))))
+            let x1 = min(width - 1, x0 + 1), y1 = min(height - 1, y0 + 1)
+            let fx = max(0, min(1, gx - Float(x0))), fy = max(0, min(1, gy - Float(y0)))
+            let a = values[y0 * width + x0] * (1 - fx) + values[y0 * width + x1] * fx
+            let b = values[y1 * width + x0] * (1 - fx) + values[y1 * width + x1] * fx
+            return a * (1 - fy) + b * fy
+        }
+    }
+
+    // Average highlights into a small map, then blur it. Radius scales with the
+    // image, so the preview and export use the same full-resolution calculation.
+    private static func highlightGlow(_ source: Pixels) -> GlowMap {
+        let w = source.width, h = source.height
+        let divisor = max(1, (max(w, h) + 511) / 512)
+        let mw = (w + divisor - 1) / divisor, mh = (h + divisor - 1) / divisor
+        var map = [Float](repeating: 0, count: mw * mh)
+        var counts = [Int](repeating: 0, count: mw * mh)
+        for y in 0..<h { for x in 0..<w {
+            let p = (y * w + x) * 4, i = (y / divisor) * mw + x / divisor
+            let lum = (0.2126 * Float(source.data[p]) + 0.7152 * Float(source.data[p + 1]) + 0.0722 * Float(source.data[p + 2])) / 255
+            let v = clamp01((lum - 0.70) / 0.30)
+            map[i] += v * v; counts[i] += 1
+        } }
+        for i in map.indices { map[i] /= Float(counts[i]) }
+        let radius = max(1, min(8, Int(Float(max(mw, mh)) * 0.012)))
+        var temp = map
+        for y in 0..<mh { for x in 0..<mw {
+            let lo = max(0, x - radius), hi = min(mw - 1, x + radius)
+            var sum: Float = 0
+            for xx in lo...hi { sum += map[y * mw + xx] }
+            temp[y * mw + x] = sum / Float(hi - lo + 1)
+        } }
+        var blurred = temp
+        for y in 0..<mh { for x in 0..<mw {
+            let lo = max(0, y - radius), hi = min(mh - 1, y + radius)
+            var sum: Float = 0
+            for yy in lo...hi { sum += temp[yy * mw + x] }
+            blurred[y * mw + x] = sum / Float(hi - lo + 1)
+        } }
+        return GlowMap(width: mw, height: mh, values: blurred)
     }
 
     // MARK: - Small helpers
